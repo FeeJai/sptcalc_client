@@ -3,9 +3,8 @@
     <div class="row">
       <div class="col-sm-12">
         <h1>Substantial Presence Test - Calculator and Planner</h1>
-        <hr />
-        <br />
 
+        <h4 class="mb-2 mt-4">Current status</h4>
         <p v-for="year in futureYears" :key="year">
           {{year}}: {{compliantNonResident(year) ? 'Non Resident' : 'Tax Resident'}}
           <span
@@ -14,15 +13,15 @@
           ({{daysIn(year)}} days present)
         </p>
 
-        <b-row class="mt-5 mb-3">
-          <b-col class="text-info">History:</b-col>
+        <h4 class="mb-2 mt-4">Past years</h4>
+        <b-row class="mb-3">
           <b-col
             v-for="n in 3"
             :key="n"
           >{{currentYear - n}}: {{compliantNonResident(currentYear - n) ? 'Non Resident' : 'Tax Resident'}} ({{daysIn(currentYear - n)}} days)</b-col>
         </b-row>
-        <br />
 
+        <h4 class="mb-2 mt-4">Planned stays</h4>
         <b-form-row>
           <b-col>
             <label for="range-1">Planned days in {{currentYear}}:</label>
@@ -58,7 +57,10 @@
           </b-col>
         </b-form-row>
 
-        <b-row class="m-4">
+
+        <h4 class="mb-2 mt-4">Travel history</h4>
+
+        <b-row class="m-3">
           <button type="button" class="btn btn-success btn-sm" v-b-modal.trip-modal>Add Trip</button>
         </b-row>
 
