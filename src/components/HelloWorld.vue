@@ -78,7 +78,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(trip, index) in trips" :key="index">
+            <tr v-for="(trip, index) in trips" :key="index" :class="rowClass(index)">
               <td>{{ trip.entry }}</td>
               <td>{{ trip.exit }}</td>
               <td>
@@ -106,8 +106,8 @@
       </div>
     </div>
 
-    <b-modal id="download-modal" ref="downloadModal" title="Donwload Travel History" hide-footer>
-      <p class="my-4">Donwload i94 Travel History from CBP:</p>
+    <b-modal id="download-modal" ref="downloadModal" title="Download Travel History" hide-footer>
+      <p class="my-4">Download i94 Travel History from CBP:</p>
       <b-container fluid>
         <b-form @submit="onDownload" class="w-100">
           <b-form-row class="mb-2">
@@ -559,6 +559,22 @@ export default {
   components: {},
   computed: {},
   methods: {
+    rowClass(index) {
+      let entry = moment(this.trips[index].entry);
+      let exit = moment(this.trips[index].exit);
+      if (!entry.isValid() || !exit.isValid()) return "table-warning";
+      if (entry.isAfter(exit)) return "table-danger";
+      if (
+        typeof this.trips[index - 1] !== "undefined" &&
+        exit.isAfter(moment(this.trips[index - 1].entry))
+      )
+        return "table-info";
+      if (
+        typeof this.trips[index + 1] !== "undefined" &&
+        entry.isBefore(moment(this.trips[index + 1].exit))
+      )
+        return "table-info";
+    },
     onDownload(evt) {
       evt.preventDefault();
       this.$refs.downloadModal.hide();
@@ -569,34 +585,32 @@ export default {
         .then(res => {
           let history = res.data.travelHistory;
           if (history[0].eventType == "Arrival") {
+            // Currently present, default trip until today
             this.trips.push({
-              entry: event.eventDate,
+              entry: history[0].eventDate,
               exit: moment().format("YYYY-MM-DD"),
               exempt: false
             });
-            history.slice(0, 1);
+            history.shift();
           }
           let lastEntry = NaN;
           let lastExit = NaN;
           for (let event of history) {
-            if (event.eventType == "Arrival" && lastEntry) {
-              this.trips.push({
-                entry: lastEntry,
-                exit: lastExit,
-                exempt: false
-              });
-              lastEntry = NaN;
-            } else if (event.eventType == "Departure" && lastExit) {
-              this.trips.push({
-                entry: lastEntry,
-                exit: lastExit,
-                exempt: false
-              });
-              lastExit = NaN;
-            }
             if (event.eventType == "Arrival") {
+              if (lastEntry)
+                this.trips.push({
+                  entry: lastEntry,
+                  exit: lastExit,
+                  exempt: false
+                });
               lastEntry = event.eventDate;
             } else if (event.eventType == "Departure") {
+              if (lastExit)
+                this.trips.push({
+                  entry: lastEntry,
+                  exit: lastExit,
+                  exempt: false
+                });
               lastExit = event.eventDate;
             }
             if (lastEntry && lastExit) {
@@ -605,7 +619,8 @@ export default {
                 exit: lastExit,
                 exempt: false
               });
-              lastEntry = lastExit = NaN;
+              lastEntry = NaN;
+              lastExit = NaN;
             }
           }
         })
@@ -614,7 +629,6 @@ export default {
           console.log(error);
         });
     },
-
     daysPerYear: function(year) {
       return (
         moment(year, "YYYY")
