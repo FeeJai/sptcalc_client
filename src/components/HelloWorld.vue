@@ -1,15 +1,67 @@
 <template>
   <div class="container">
     <div class="row">
-      <div class="col-sm-10">
-        <h1>SPT Calculator</h1>
+      <div class="col-sm-12">
+        <h1>Substantial Presence Test - Calculator and Planner</h1>
         <hr />
         <br />
+
+        <p v-for="year in futureYears" :key="year">
+          {{year}}: {{compliantNonResident(year) ? 'Non Resident' : 'Tax Resident'}}
+          <span
+            v-if="compliantNonResident(year)"
+          >for up to {{compliantDays(year)}} additional days</span>
+          ({{daysIn(year)}} days present)
+        </p>
+
+        <b-row class="mt-5 mb-3">
+          <b-col class="text-info">History:</b-col>
+          <b-col
+            v-for="n in 3"
+            :key="n"
+          >{{currentYear - n}}: {{compliantNonResident(currentYear - n) ? 'Non Resident' : 'Tax Resident'}} ({{daysIn(currentYear - n)}} days)</b-col>
+        </b-row>
         <br />
-        <p>Days in 2020: {{daysIn(2020)}}</p>
-        <button type="button" class="btn btn-success btn-sm" v-b-modal.trip-modal>Add Trip</button>
-        <br />
-        <br />
+
+        <b-form-row>
+          <b-col>
+            <label for="range-1">Planned days in {{currentYear}}:</label>
+          </b-col>
+          <b-col>
+            <b-form-input
+              id="range-1"
+              v-model="additionalDays.currentYear"
+              type="range"
+              min="0"
+              :max="(365 - daysIn(currentYear, true))"
+            ></b-form-input>
+          </b-col>
+          <b-col>
+            <div>{{ additionalDays.currentYear }}/{{365 - daysIn(currentYear, true)}}</div>
+          </b-col>
+        </b-form-row>
+        <b-form-row>
+          <b-col>
+            <label for="range-2">Planned days in {{currentYear + 1}}:</label>
+          </b-col>
+          <b-col>
+            <b-form-input
+              id="range-2"
+              v-model="additionalDays.nextYear"
+              type="range"
+              min="0"
+              :max="(365 - daysIn(currentYear + 1, true))"
+            ></b-form-input>
+          </b-col>
+          <b-col>
+            <div>{{ additionalDays.nextYear }}/{{365 - daysIn(currentYear + 1, true)}}</div>
+          </b-col>
+        </b-form-row>
+
+        <b-row class="m-4">
+          <button type="button" class="btn btn-success btn-sm" v-b-modal.trip-modal>Add Trip</button>
+        </b-row>
+
         <table class="table table-hover">
           <thead>
             <tr>
@@ -125,6 +177,16 @@ import moment from "moment";
 export default {
   data() {
     return {
+      currentYear: parseInt(moment().format("YYYY")),
+      futureYears: [
+        parseInt(moment().format("YYYY")) + 2,
+        parseInt(moment().format("YYYY")) + 1,
+        parseInt(moment().format("YYYY"))
+      ],
+      additionalDays: {
+        currentYear: 0,
+        nextYear: 0
+      },
       trips: [
         {
           entry: "2020-01-01",
@@ -135,6 +197,11 @@ export default {
           entry: "2020-02-01",
           exit: "2020-02-01",
           exempt: true
+        },
+        {
+          entry: "2019-01-01",
+          exit: "2019-09-01",
+          exempt: false
         }
       ],
       addTripForm: {
@@ -156,20 +223,39 @@ export default {
   computed: {},
   methods: {
     compliantNonResident: function(year) {
-      let currentYear = this.daysIn(year);
-      if (currentYear < 31 || (currentYear + this.daysIn(year - 1) / 3 + this.daysIn(year - 2) / 6) < 183) //there is no documentation on rounding in the official rules, therefore using floats
-      return (true);
-      return (false);
+      /*       let currentYear = this.daysIn(year);
+      if (
+        currentYear < 31 ||
+        currentYear + this.daysIn(year - 1) / 3 + this.daysIn(year - 2) / 6 <
+          183
+      )
+        //there is no documentation on rounding in the official rules, therefore using floats
+        return true;
+      return false; */
+      return this.compliantDays(year) >= 0;
     },
-    daysIn: function(year) {
+    compliantDays: function(year) {
+      let currentYear = this.daysIn(year);
+      let remaining = Math.max(
+        31 - currentYear,
+        183 -
+          (currentYear + this.daysIn(year - 1) / 3 + this.daysIn(year - 2) / 6)
+      );
+      return Math.floor(remaining) - 1;
+    },
+    daysIn: function(year, excludePlanned = false) {
       let days = 0;
       let startOfYear = moment(year, "YYYY").startOf("year");
       let endOfYear = moment(year, "YYYY").endOf("year");
+      if (year == this.currentYear && !excludePlanned)
+        days += parseInt(this.additionalDays.currentYear);
+      if (year == this.currentYear + 1 && !excludePlanned)
+        days += parseInt(this.additionalDays.nextYear);
       for (let trip of this.trips) {
         if (trip.exempt) continue;
         let entryDate = moment(trip.entry);
         let exitDate = moment(trip.exit);
-        if (entryDate <= endOfYear || exitDate <= startOfYear) {
+        if (entryDate <= endOfYear && exitDate >= startOfYear) {
           let begin = moment.max(entryDate, startOfYear);
           let end = moment.min(exitDate, endOfYear).add(1, "days"); //the day of entry and exit count, i.e. leaving on the same day is 1, not 0 days
           days += end.diff(begin, "days");
