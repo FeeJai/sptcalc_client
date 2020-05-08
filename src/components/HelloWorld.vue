@@ -10,7 +10,7 @@
           <span
             v-if="compliantNonResident(year)"
           >for up to {{compliantDays(year)}} additional days</span>
-          ({{daysIn(year)}} days present)
+          ({{daysPresent(year)}} days present)
         </p>
 
         <h4 class="mb-2 mt-4">Past years</h4>
@@ -18,7 +18,7 @@
           <b-col
             v-for="n in 3"
             :key="n"
-          >{{currentYear - n}}: {{compliantNonResident(currentYear - n) ? 'Non Resident' : 'Tax Resident'}} ({{daysIn(currentYear - n)}} days)</b-col>
+          >{{currentYear - n}}: {{compliantNonResident(currentYear - n) ? 'Non Resident' : 'Tax Resident'}} ({{daysPresent(currentYear - n)}} days)</b-col>
         </b-row>
 
         <h4 class="mb-2 mt-4">Planned stays</h4>
@@ -32,11 +32,11 @@
               v-model="additionalDays.currentYear"
               type="range"
               min="0"
-              :max="(365 - daysIn(currentYear, true))"
+              :max="(daysPerYear(currentYear) - daysPresent(currentYear, true))"
             ></b-form-input>
           </b-col>
           <b-col>
-            <div>{{ additionalDays.currentYear }}/{{365 - daysIn(currentYear, true)}}</div>
+            <div>{{ additionalDays.currentYear }}/{{daysPerYear(currentYear) - daysPresent(currentYear, true)}}</div>
           </b-col>
         </b-form-row>
         <b-form-row>
@@ -49,19 +49,23 @@
               v-model="additionalDays.nextYear"
               type="range"
               min="0"
-              :max="(365 - daysIn(currentYear + 1, true))"
+              :max="(daysPerYear(currentYear + 1) - daysPresent(currentYear + 1, true))"
             ></b-form-input>
           </b-col>
           <b-col>
-            <div>{{ additionalDays.nextYear }}/{{365 - daysIn(currentYear + 1, true)}}</div>
+            <div>{{ additionalDays.nextYear }}/{{daysPerYear(currentYear + 1) - daysPresent(currentYear + 1, true)}}</div>
           </b-col>
         </b-form-row>
 
-
         <h4 class="mb-2 mt-4">Travel history</h4>
 
-        <b-row class="m-3">
-          <button type="button" class="btn btn-success btn-sm" v-b-modal.trip-modal>Add Trip</button>
+        <b-row class="m-1">
+          <button type="button" class="btn btn-success m-1" v-b-modal.trip-modal>Add Trip</button>
+          <button
+            type="button"
+            class="btn btn-primary m-1"
+            v-b-modal.trip-modal
+          >Download Travel History from CBP</button>
         </b-row>
 
         <table class="table table-hover">
@@ -101,6 +105,7 @@
         </table>
       </div>
     </div>
+
 
     <b-modal ref="addTripModal" id="trip-modal" entry="Add a new trip" hide-footer>
       <b-form @submit="onSubmit" @reset="onReset" class="w-100">
@@ -224,28 +229,28 @@ export default {
   components: {},
   computed: {},
   methods: {
+    daysPerYear: function(year) {
+      return (
+        moment(year, "YYYY")
+          .endOf("year")
+          .diff(moment(year, "YYYY").startOf("year"), "days") + 1
+      );
+    },
     compliantNonResident: function(year) {
-      /*       let currentYear = this.daysIn(year);
-      if (
-        currentYear < 31 ||
-        currentYear + this.daysIn(year - 1) / 3 + this.daysIn(year - 2) / 6 <
-          183
-      )
-        //there is no documentation on rounding in the official rules, therefore using floats
-        return true;
-      return false; */
       return this.compliantDays(year) >= 0;
     },
     compliantDays: function(year) {
-      let currentYear = this.daysIn(year);
+      let currentYear = this.daysPresent(year);
       let remaining = Math.max(
         31 - currentYear,
         183 -
-          (currentYear + this.daysIn(year - 1) / 3 + this.daysIn(year - 2) / 6)
+          (currentYear +
+            this.daysPresent(year - 1) / 3 +
+            this.daysPresent(year - 2) / 6)
       );
       return Math.floor(remaining) - 1;
     },
-    daysIn: function(year, excludePlanned = false) {
+    daysPresent: function(year, excludePlanned = false) {
       let days = 0;
       let startOfYear = moment(year, "YYYY").startOf("year");
       let endOfYear = moment(year, "YYYY").endOf("year");
