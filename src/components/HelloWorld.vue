@@ -5,6 +5,9 @@
         <h1>SPT Calculator</h1>
         <hr />
         <br />
+        <ul>
+          <li v-for="(days, year) in daysPerYear" v-bind:key="year">{{ year }}: {{ days }}</li>
+        </ul>
         <br />
         <button type="button" class="btn btn-success btn-sm" v-b-modal.trip-modal>Add Trip</button>
         <br />
@@ -50,22 +53,26 @@
     <b-modal ref="addTripModal" id="trip-modal" entry="Add a new trip" hide-footer>
       <b-form @submit="onSubmit" @reset="onReset" class="w-100">
         <b-form-group id="form-entry-group" label="Entry:" label-for="form-entry-input">
-          <b-form-input
+          <b-form-datepicker
             id="form-entry-input"
             type="text"
             v-model="addTripForm.entry"
             required
-            placeholder="Enter entry"
-          ></b-form-input>
+            placeholder="Enter entry date"
+            menu-class="w-100"
+            calendar-width="100%"
+          ></b-form-datepicker>
         </b-form-group>
         <b-form-group id="form-exit-group" label="Exit:" label-for="form-exit-input">
-          <b-form-input
+          <b-form-datepicker
             id="form-exit-input"
             type="text"
             v-model="addTripForm.exit"
             required
-            placeholder="Enter exit"
-          ></b-form-input>
+            placeholder="Enter exit date"
+            menu-class="w-100"
+            calendar-width="100%"
+          ></b-form-datepicker>
         </b-form-group>
         <b-form-group id="form-exempt-group">
           <b-form-checkbox v-model="addTripForm.exempt" value="true">Exempt?</b-form-checkbox>
@@ -80,25 +87,29 @@
     <b-modal ref="editTripModal" id="trip-update-modal" entry="Update" hide-footer>
       <b-form @submit="onSubmitUpdate" @reset="onResetUpdate" class="w-100">
         <b-form-group id="form-entry-edit-group" label="Entry:" label-for="form-entry-edit-input">
-          <b-form-input
+          <b-form-datepicker
             id="form-entry-edit-input"
             type="text"
             v-model="editForm.entry"
             required
-            placeholder="Enter entry"
-          ></b-form-input>
+            placeholder="Enter entry date"
+            menu-class="w-100"
+            calendar-width="100%"
+          ></b-form-datepicker>
         </b-form-group>
         <b-form-group id="form-exit-edit-group" label="Exit:" label-for="form-exit-edit-input">
-          <b-form-input
+          <b-form-datepicker
             id="form-exit-edit-input"
             type="text"
             v-model="editForm.exit"
             required
-            placeholder="Enter exit"
-          ></b-form-input>
+            placeholder="Enter exit date"
+            menu-class="w-100"
+            calendar-width="100%"
+          ></b-form-datepicker>
         </b-form-group>
         <b-form-group id="form-exempt-edit-group">
-            <b-form-checkbox v-model="editForm.exempt" value="true">Exempt?</b-form-checkbox>
+          <b-form-checkbox v-model="editForm.exempt" value="true">Exempt?</b-form-checkbox>
         </b-form-group>
         <b-button-group>
           <b-button type="submit" variant="primary">Update</b-button>
@@ -106,7 +117,6 @@
         </b-button-group>
       </b-form>
     </b-modal>
-
   </div>
 </template>
 
@@ -115,6 +125,14 @@
 export default {
   data() {
     return {
+      daysPerYear: {
+        2017: 0,
+        2018: 0,
+        2019: 0,
+        2020: 0,
+        2021: 0,
+        2022: 0
+      },
       trips: [
         {
           entry: "2020-01-01",
@@ -177,12 +195,11 @@ export default {
       this.editForm.entry = trip.entry;
       this.editForm.exit = trip.exit;
       this.editForm.exempt = trip.exempt;
-
     },
     onSubmitUpdate(evt) {
       evt.preventDefault();
       this.$refs.editTripModal.hide();
-      console.log(this.editForm)
+      console.log(this.editForm);
       let exempt = false;
       if (this.editForm.exempt) exempt = true;
       const payload = {
@@ -197,7 +214,6 @@ export default {
       evt.preventDefault();
       this.$refs.editTripModal.hide();
       this.initForm();
-
     },
     onDeleteTrip(trip) {
       this.trips.splice(trip, 1);
