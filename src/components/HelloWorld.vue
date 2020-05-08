@@ -5,10 +5,8 @@
         <h1>SPT Calculator</h1>
         <hr />
         <br />
-        <ul>
-          <li v-for="(days, year) in daysPerYear" v-bind:key="year">{{ year }}: {{ days }}</li>
-        </ul>
         <br />
+        <p>Days in 2020: {{daysIn(2020)}}</p>
         <button type="button" class="btn btn-success btn-sm" v-b-modal.trip-modal>Add Trip</button>
         <br />
         <br />
@@ -122,17 +120,11 @@
 
 <script>
 //import axios from "axios";
+import moment from "moment";
+
 export default {
   data() {
     return {
-      daysPerYear: {
-        2017: 0,
-        2018: 0,
-        2019: 0,
-        2020: 0,
-        2021: 0,
-        2022: 0
-      },
       trips: [
         {
           entry: "2020-01-01",
@@ -161,7 +153,30 @@ export default {
     };
   },
   components: {},
+  computed: {},
   methods: {
+    compliantNonResident: function(year) {
+      let currentYear = this.daysIn(year);
+      if (currentYear < 31 || (currentYear + this.daysIn(year - 1) / 3 + this.daysIn(year - 2) / 6) < 183) //there is no documentation on rounding in the official rules, therefore using floats
+      return (true);
+      return (false);
+    },
+    daysIn: function(year) {
+      let days = 0;
+      let startOfYear = moment(year, "YYYY").startOf("year");
+      let endOfYear = moment(year, "YYYY").endOf("year");
+      for (let trip of this.trips) {
+        if (trip.exempt) continue;
+        let entryDate = moment(trip.entry);
+        let exitDate = moment(trip.exit);
+        if (entryDate <= endOfYear || exitDate <= startOfYear) {
+          let begin = moment.max(entryDate, startOfYear);
+          let end = moment.min(exitDate, endOfYear).add(1, "days"); //the day of entry and exit count, i.e. leaving on the same day is 1, not 0 days
+          days += end.diff(begin, "days");
+        }
+      }
+      return days;
+    },
     initForm() {
       this.addTripForm.entry = "";
       this.addTripForm.exit = "";
