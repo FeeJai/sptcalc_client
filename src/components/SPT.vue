@@ -24,23 +24,6 @@
         <h4 class="mb-2 mt-4">Planned stays</h4>
         <b-form-row>
           <b-col>
-            <label for="range-1">Planned days in {{currentYear}}:</label>
-          </b-col>
-          <b-col>
-            <b-form-input
-              id="range-1"
-              v-model="additionalDays.currentYear"
-              type="range"
-              min="0"
-              :max="(daysPerYear(currentYear) - daysPresent(currentYear, true))"
-            ></b-form-input>
-          </b-col>
-          <b-col>
-            <div>{{ additionalDays.currentYear }}/{{daysPerYear(currentYear) - daysPresent(currentYear, true)}}</div>
-          </b-col>
-        </b-form-row>
-        <b-form-row>
-          <b-col>
             <label for="range-2">Planned days in {{currentYear + 1}}:</label>
           </b-col>
           <b-col>
@@ -54,6 +37,24 @@
           </b-col>
           <b-col>
             <div>{{ additionalDays.nextYear }}/{{daysPerYear(currentYear + 1) - daysPresent(currentYear + 1, true)}}</div>
+          </b-col>
+        </b-form-row>
+
+        <b-form-row>
+          <b-col>
+            <label for="range-1">Planned days in {{currentYear}}:</label>
+          </b-col>
+          <b-col>
+            <b-form-input
+              id="range-1"
+              v-model="additionalDays.currentYear"
+              type="range"
+              min="0"
+              :max="(daysPerYear(currentYear) - daysPresent(currentYear, true))"
+            ></b-form-input>
+          </b-col>
+          <b-col>
+            <div>{{ additionalDays.currentYear }}/{{daysPerYear(currentYear) - daysPresent(currentYear, true)}}</div>
           </b-col>
         </b-form-row>
 
@@ -580,6 +581,7 @@ export default {
       this.$refs.downloadModal.hide();
 
       const path = "http://proxy.sptcalc.com/i94";
+      //const path = "http://localhost:8000/i94";
       axios
         .post(path, this.downloadData)
         .then(res => {
